@@ -10,10 +10,6 @@ use Intrfce\FFFlags\FeatureFlag;
 #[Description('Attribute Description')]
 class BothNameFeature extends FeatureFlag
 {
-    protected string $name = 'Property Name';
-
-    protected string $description = 'Property Description';
-
     public function resolve(): bool
     {
         return true;

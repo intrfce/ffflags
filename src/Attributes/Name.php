@@ -9,5 +9,6 @@ class Name
 {
     public function __construct(
         public readonly string $name,
+        public readonly ?string $slug = null,
     ) {}
 }

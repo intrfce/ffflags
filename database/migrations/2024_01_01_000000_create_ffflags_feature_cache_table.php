@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('ffflags_feature_cache', function (Blueprint $table) {
             $table->id();
-            $table->string('feature_class');
+            $table->string('feature_slug');
             $table->string('scope_type')->nullable();
             $table->string('scope_id')->nullable();
             $table->boolean('result');
             $table->timestamps();
 
-            $table->unique(['feature_class', 'scope_type', 'scope_id']);
+            $table->unique(['feature_slug', 'scope_type', 'scope_id']);
         });
     }
 

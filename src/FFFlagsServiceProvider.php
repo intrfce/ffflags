@@ -8,7 +8,7 @@ use Intrfce\FFFlags\Commands\PurgeFeatureFlagResultsCommand;
 use Intrfce\FFFlags\Contracts\ResultStore;
 use Intrfce\FFFlags\Drivers\DatabaseResultStore;
 
-class FFlagsServiceProvider extends ServiceProvider
+class FFFlagsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {

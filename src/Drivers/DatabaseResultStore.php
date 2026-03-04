@@ -7,10 +7,10 @@ use Intrfce\FFFlags\Models\FeatureFlagResult;
 
 class DatabaseResultStore implements ResultStore
 {
-    public function get(string $featureClass, ?string $scopeType, string|int|null $scopeId): ?bool
+    public function get(string $featureSlug, ?string $scopeType, string|int|null $scopeId): ?bool
     {
         $record = FeatureFlagResult::query()
-            ->where('feature_class', $featureClass)
+            ->where('feature_slug', $featureSlug)
             ->where('scope_type', $scopeType)
             ->where('scope_id', $scopeId)
             ->first();
@@ -18,11 +18,11 @@ class DatabaseResultStore implements ResultStore
         return $record?->result;
     }
 
-    public function store(string $featureClass, ?string $scopeType, string|int|null $scopeId, bool $result): void
+    public function store(string $featureSlug, ?string $scopeType, string|int|null $scopeId, bool $result): void
     {
         FeatureFlagResult::query()->updateOrCreate(
             [
-                'feature_class' => $featureClass,
+                'feature_slug' => $featureSlug,
                 'scope_type' => $scopeType,
                 'scope_id' => $scopeId,
             ],
@@ -32,10 +32,10 @@ class DatabaseResultStore implements ResultStore
         );
     }
 
-    public function delete(string $featureClass, ?string $scopeType, string|int|null $scopeId): void
+    public function delete(string $featureSlug, ?string $scopeType, string|int|null $scopeId): void
     {
         FeatureFlagResult::query()
-            ->where('feature_class', $featureClass)
+            ->where('feature_slug', $featureSlug)
             ->where('scope_type', $scopeType)
             ->where('scope_id', $scopeId)
             ->delete();

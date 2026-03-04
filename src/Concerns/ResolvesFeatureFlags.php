@@ -6,8 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Intrfce\FFFlags\Exceptions\InvalidScopeException;
 use Intrfce\FFFlags\Exceptions\ScopeProvidedButResolveHandlerMissingException;
 use Intrfce\FFFlags\Exceptions\ScopeTypeMismatchException;
+use Intrfce\FFFlags\Exceptions\ScopeDoesNotHaveKeyException;
+use Intrfce\FFFlags\Attributes\BypassStorage;
 use Intrfce\FFFlags\FeatureFlag;
 use Intrfce\FFFlags\FeatureFlagManager;
+use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
 
@@ -16,6 +19,7 @@ trait ResolvesFeatureFlags
     protected static function resolveFeature(FeatureFlag $feature, mixed $scope, FeatureFlagManager $manager): bool
     {
         $featureClass = get_class($feature);
+        $featureSlug = $feature->getSlug();
 
         // Validate scope type — must be null or a Model.
         if ($scope !== null && ! ($scope instanceof Model)) {
@@ -25,11 +29,21 @@ trait ResolvesFeatureFlags
             );
         }
 
+        // Validate that Model scope has been persisted.
+        if ($scope instanceof Model && $scope->getKey() === null) {
+            throw new ScopeDoesNotHaveKeyException(
+                featureClass: $featureClass,
+                scopeType: get_class($scope),
+            );
+        }
+
+        $bypassStorage = count((new ReflectionClass($feature))->getAttributes(BypassStorage::class)) > 0;
+
         // Derive cache key parts.
         $scopeType = $scope?->getMorphClass();
         $scopeId = $scope?->getKey();
 
-        $cacheKey = FeatureFlagManager::buildCacheKey($featureClass, $scopeType, $scopeId);
+        $cacheKey = FeatureFlagManager::buildCacheKey($featureSlug, $scopeType, $scopeId);
 
         // 1. Check in-memory cache.
         $memoryCached = $manager->getFromMemory($cacheKey);
@@ -37,12 +51,14 @@ trait ResolvesFeatureFlags
             return $memoryCached;
         }
 
-        // 2. Check the result store (database).
-        $storeCached = $manager->getStore()->get($featureClass, $scopeType, $scopeId);
-        if ($storeCached !== null) {
-            $manager->storeInMemory($cacheKey, $storeCached);
+        // 2. Check the result store (database), unless bypassing storage.
+        if (! $bypassStorage) {
+            $storeCached = $manager->getStore()->get($featureSlug, $scopeType, $scopeId);
+            if ($storeCached !== null) {
+                $manager->storeInMemory($cacheKey, $storeCached);
 
-            return $storeCached;
+                return $storeCached;
+            }
         }
 
         // 3. Resolve the feature flag.
@@ -50,7 +66,10 @@ trait ResolvesFeatureFlags
 
         // 4. Store result.
         $manager->storeInMemory($cacheKey, $result);
-        $manager->getStore()->store($featureClass, $scopeType, $scopeId, $result);
+
+        if (! $bypassStorage) {
+            $manager->getStore()->store($featureSlug, $scopeType, $scopeId, $result);
+        }
 
         return $result;
     }

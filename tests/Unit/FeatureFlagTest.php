@@ -1,38 +1,32 @@
 <?php
 
+use Intrfce\FFFlags\Exceptions\MissingFeatureFlagNameException;
 use Intrfce\FFFlags\PendingSingleFeatureInteraction;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysActiveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysInactiveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AttributeNameFeature;
-use Intrfce\FFFlags\Tests\Fixtures\Features\BothNameFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\NoResolveFeature;
-use Intrfce\FFFlags\Tests\Fixtures\Features\PropertyNameFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\ScopedFeature;
 use Intrfce\FFFlags\Tests\Fixtures\User;
-
-it('resolves name from property', function () {
-    $feature = new PropertyNameFeature();
-    expect($feature->getName())->toBe('Property Name');
-});
 
 it('resolves name from attribute', function () {
     $feature = new AttributeNameFeature();
     expect($feature->getName())->toBe('Attribute Name');
 });
 
-it('falls back to class name when no name set', function () {
-    $feature = new AlwaysActiveFeature();
-    expect($feature->getName())->toBe('AlwaysActiveFeature');
+it('throws when no name is set', function () {
+    $feature = new class extends \Intrfce\FFFlags\FeatureFlag {};
+    $feature->getName();
+})->throws(MissingFeatureFlagNameException::class);
+
+it('resolves slug from attribute', function () {
+    $feature = new #[\Intrfce\FFFlags\Attributes\Name('Test', 'attr-slug')] class extends \Intrfce\FFFlags\FeatureFlag {};
+    expect($feature->getSlug())->toBe('attr-slug');
 });
 
-it('prioritises property over attribute for name', function () {
-    $feature = new BothNameFeature();
-    expect($feature->getName())->toBe('Property Name');
-});
-
-it('resolves description from property', function () {
-    $feature = new PropertyNameFeature();
-    expect($feature->getDescription())->toBe('Property Description');
+it('falls back to Str::slug of name for slug', function () {
+    $feature = new AttributeNameFeature();
+    expect($feature->getSlug())->toBe('attribute-name');
 });
 
 it('resolves description from attribute', function () {
@@ -43,11 +37,6 @@ it('resolves description from attribute', function () {
 it('defaults description to empty string', function () {
     $feature = new AlwaysActiveFeature();
     expect($feature->getDescription())->toBe('');
-});
-
-it('prioritises property over attribute for description', function () {
-    $feature = new BothNameFeature();
-    expect($feature->getDescription())->toBe('Property Description');
 });
 
 it('returns PendingSingleFeatureInteraction from for()', function () {

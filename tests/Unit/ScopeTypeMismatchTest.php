@@ -3,6 +3,7 @@
 use Intrfce\FFFlags\Exceptions\InvalidScopeException;
 use Intrfce\FFFlags\Exceptions\ScopeProvidedButResolveHandlerMissingException;
 use Intrfce\FFFlags\Exceptions\ScopeTypeMismatchException;
+use Intrfce\FFFlags\Exceptions\ScopeDoesNotHaveKeyException;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysActiveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\NoResolveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\ScopedFeature;
@@ -88,4 +89,28 @@ it('includes feature class and actual type in invalid scope exception', function
     }
 
     $this->fail('Expected InvalidScopeException was not thrown.');
+});
+
+it('throws when scope model has not been persisted', function () {
+    $user = new User();
+    $user->email = 'test@example.com';
+
+    ScopedFeature::for($user)->isActive();
+})->throws(ScopeDoesNotHaveKeyException::class);
+
+it('includes feature class and scope type in unpersisted scope exception', function () {
+    $user = new User();
+    $user->email = 'test@example.com';
+
+    try {
+        ScopedFeature::for($user)->isActive();
+    } catch (ScopeDoesNotHaveKeyException $e) {
+        expect($e->featureClass)->toBe(ScopedFeature::class);
+        expect($e->scopeType)->toBe(User::class);
+        expect($e->getMessage())->toContain('not been persisted');
+
+        return;
+    }
+
+    $this->fail('Expected ScopeDoesNotHaveKeyException was not thrown.');
 });

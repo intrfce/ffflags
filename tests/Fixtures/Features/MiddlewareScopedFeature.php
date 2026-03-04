@@ -3,10 +3,12 @@
 namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
 use Illuminate\Http\Request;
+use Intrfce\FFFlags\Attributes\Name;
 use Intrfce\FFFlags\Contracts\ResolvingFromMiddleware;
 use Intrfce\FFFlags\FeatureFlag;
 use Intrfce\FFFlags\Tests\Fixtures\User;
 
+#[Name('Middleware Scoped Feature')]
 class MiddlewareScopedFeature extends FeatureFlag implements ResolvingFromMiddleware
 {
     public function resolveMiddlewareScope(Request $request): mixed
