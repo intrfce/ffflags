@@ -3,6 +3,7 @@
 namespace Intrfce\FFFlags;
 
 use Intrfce\FFFlags\Attributes\BypassStorage;
+use Intrfce\FFFlags\Attributes\ScopeWithModelRules;
 use ReflectionClass;
 
 readonly class DiscoveredFeatureFlag
@@ -14,6 +15,9 @@ readonly class DiscoveredFeatureFlag
         public string $slug,
         public string $description,
         public bool $bypassesStorage,
+        public bool $hasModelRules,
+        /** @var class-string<\Illuminate\Database\Eloquent\Model>|null */
+        public ?string $modelClass,
     ) {}
 
     /**
@@ -24,12 +28,17 @@ readonly class DiscoveredFeatureFlag
         $instance = new $className();
         $ref = new ReflectionClass($className);
 
+        $scopeAttrs = $ref->getAttributes(ScopeWithModelRules::class);
+        $hasModelRules = count($scopeAttrs) > 0;
+
         return new self(
             class: $className,
             name: $instance->getName(),
             slug: $instance->getSlug(),
             description: $instance->getDescription(),
             bypassesStorage: count($ref->getAttributes(BypassStorage::class)) > 0,
+            hasModelRules: $hasModelRules,
+            modelClass: $hasModelRules ? $scopeAttrs[0]->newInstance()->model : null,
         );
     }
 }

@@ -30,7 +30,9 @@
                         @foreach($features as $feature)
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {{ $feature->name }}
+                                    <a href="{{ route('ffflags.feature.show', $feature->slug) }}" class="text-indigo-600 hover:text-indigo-900">
+                                        {{ $feature->name }}
+                                    </a>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <code>{{ $feature->slug }}</code>
