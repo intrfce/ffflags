@@ -5,11 +5,15 @@ namespace Intrfce\FFFlags\Concerns;
 use Illuminate\Database\Eloquent\Model;
 use Intrfce\FFFlags\Exceptions\InvalidScopeException;
 use Intrfce\FFFlags\Exceptions\ScopeProvidedButResolveHandlerMissingException;
+use Intrfce\FFFlags\Exceptions\ScopeRequiredException;
 use Intrfce\FFFlags\Exceptions\ScopeTypeMismatchException;
 use Intrfce\FFFlags\Exceptions\ScopeDoesNotHaveKeyException;
 use Intrfce\FFFlags\Attributes\BypassStorage;
+use Intrfce\FFFlags\Attributes\ScopeWithModelRules;
+use Intrfce\FFFlags\Enums\ScopeCondition;
 use Intrfce\FFFlags\FeatureFlag;
 use Intrfce\FFFlags\FeatureFlagManager;
+use Intrfce\FFFlags\Models\FeatureFlagModelScope;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionNamedType;
@@ -37,7 +41,27 @@ trait ResolvesFeatureFlags
             );
         }
 
-        $bypassStorage = count((new ReflectionClass($feature))->getAttributes(BypassStorage::class)) > 0;
+        $ref = new ReflectionClass($feature);
+        $bypassStorage = count($ref->getAttributes(BypassStorage::class)) > 0;
+        $scopeWithModelsAttrs = $ref->getAttributes(ScopeWithModelRules::class);
+        $usesModelScopes = count($scopeWithModelsAttrs) > 0;
+
+        // Validate scope against #[ScopeWithModelRules] if present.
+        if ($usesModelScopes) {
+            if ($scope === null) {
+                throw new ScopeRequiredException(featureClass: $featureClass);
+            }
+
+            $expectedModel = $scopeWithModelsAttrs[0]->newInstance()->model;
+
+            if (! ($scope instanceof $expectedModel)) {
+                throw new ScopeTypeMismatchException(
+                    featureClass: $featureClass,
+                    expectedType: $expectedModel,
+                    actualType: get_debug_type($scope),
+                );
+            }
+        }
 
         // Derive cache key parts.
         $scopeType = $scope?->getMorphClass();
@@ -62,7 +86,11 @@ trait ResolvesFeatureFlags
         }
 
         // 3. Resolve the feature flag.
-        $result = static::evaluateResolveMethod($feature, $scope);
+        if ($usesModelScopes && $scope instanceof Model) {
+            $result = static::evaluateModelScope($feature, $scope);
+        } else {
+            $result = static::evaluateResolveMethod($feature, $scope);
+        }
 
         // 4. Store result.
         $manager->storeInMemory($cacheKey, $result);
@@ -109,5 +137,31 @@ trait ResolvesFeatureFlags
         }
 
         return (bool) $feature->resolve($scope);
+    }
+
+    protected static function evaluateModelScope(FeatureFlag $feature, Model $scope): bool
+    {
+        $modelScope = FeatureFlagModelScope::query()
+            ->where('feature_slug', $feature->getSlug())
+            ->where('scope_type', $scope->getMorphClass())
+            ->first();
+
+        if ($modelScope === null) {
+            if (! method_exists($feature, 'resolve')) {
+                return false;
+            }
+
+            return static::evaluateResolveMethod($feature, $scope);
+        }
+
+        $key = $scope->getKey();
+        $values = $modelScope->value;
+
+        return match ($modelScope->condition) {
+            ScopeCondition::Equals => in_array($key, $values),
+            ScopeCondition::DoesNotEqual => ! in_array($key, $values),
+            ScopeCondition::IsOneOf => in_array($key, $values),
+            ScopeCondition::IsNoneOf => ! in_array($key, $values),
+        };
     }
 }
