@@ -12,9 +12,10 @@ This package was heavily inspired by [Laravel Pennant](https://github.com/larave
 composer require intrfce/ffflags
 ```
 
-Publish and run the migrations:
+Publish the config file and run the migrations:
 
 ```bash
+php artisan vendor:publish --tag="ffflags-config"
 php artisan vendor:publish --provider="Intrfce\FFFlags\FFFlagsServiceProvider"
 php artisan migrate
 ```
@@ -258,11 +259,21 @@ MyFeature::for($team)->isActive();
 
 ## Purging Cached Results
 
-To clear all cached feature flag results from the database:
+To clear all cached feature flag results from the database, use the artisan command:
 
 ```bash
 php artisan ffflags:purge
 ```
+
+Or programmatically via the facade:
+
+```php
+use Intrfce\FFFlags\Facades\FeatureFlag;
+
+FeatureFlag::purgeAll();
+```
+
+This clears both the database and the in-memory cache.
 
 ## Exceptions
 

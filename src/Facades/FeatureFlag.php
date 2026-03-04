@@ -9,6 +9,7 @@ use Intrfce\FFFlags\PendingFeatureInteraction;
 /**
  * @method static PendingFeatureInteraction for(mixed $scope)
  * @method static bool isActive(string $featureClass)
+ * @method static void purgeAll()
  *
  * @see FeatureFlagManager
  */

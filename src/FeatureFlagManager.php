@@ -37,6 +37,12 @@ class FeatureFlagManager
         return (new PendingSingleFeatureInteraction($feature, null, $this))->isActive();
     }
 
+    public function purgeAll(): void
+    {
+        $this->store->purge();
+        $this->memoryCache = [];
+    }
+
     public function getStore(): ResultStore
     {
         return $this->store;

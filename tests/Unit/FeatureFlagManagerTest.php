@@ -2,6 +2,7 @@
 
 use Intrfce\FFFlags\Exceptions\ScopeRequiredException;
 use Intrfce\FFFlags\FeatureFlagManager;
+use Intrfce\FFFlags\Models\FeatureFlagResult;
 use Intrfce\FFFlags\PendingFeatureInteraction;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysActiveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysInactiveFeature;
@@ -68,3 +69,16 @@ it('throws ScopeRequiredException when calling isActive on a scoped feature', fu
     $manager = app(FeatureFlagManager::class);
     $manager->isActive(ScopedFeature::class);
 })->throws(ScopeRequiredException::class);
+
+it('purges all cached results from database and memory', function () {
+    $manager = app(FeatureFlagManager::class);
+
+    // Populate caches.
+    $manager->isActive(AlwaysActiveFeature::class);
+    expect(FeatureFlagResult::count())->toBe(1);
+
+    $manager->purgeAll();
+
+    expect(FeatureFlagResult::count())->toBe(0);
+    expect($manager->getFromMemory('always-active::'))->toBeNull();
+});

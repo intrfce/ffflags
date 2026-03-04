@@ -12,6 +12,8 @@ class FFFlagsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->mergeConfigFrom(__DIR__.'/../config/ffflags.php', 'ffflags');
+
         $this->app->singleton(ResultStore::class, DatabaseResultStore::class);
 
         $this->app->singleton(FeatureFlagManager::class, function ($app) {
@@ -21,6 +23,10 @@ class FFFlagsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->publishes([
+            __DIR__.'/../config/ffflags.php' => config_path('ffflags.php'),
+        ], 'ffflags-config');
+
         $this->publishesMigrations([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ]);
