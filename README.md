@@ -1,168 +1,124 @@
-# Laravel Frontend Enums
+# FFFlags
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/intrfce/laravel-frontend-enums.svg?style=flat-square)](https://packagist.org/packages/intrfce/laravel-frontend-enums)
-[![Total Downloads](https://img.shields.io/packagist/dt/intrfce/laravel-frontend-enums.svg?style=flat-square)](https://packagist.org/packages/intrfce/laravel-frontend-enums)
-![GitHub Actions](https://github.com/intrfce/laravel-frontend-enums/actions/workflows/main.yml/badge.svg)
-
-Publish your PHP enums to the front-end of your application, so you can refer to them in your JavaScript code.
-
-This means less reliance on "magic strings".
-
-```js
-
-// Before:
-
-if (myValue === 'name') {
-  // Do something
-}
-
-// After
-import {UserProfileField} from './UserProfileField.enum.js';
-
-if (myValue === UserProfileField.Name) {
-  // Do something.
-}
-````
+A feature flag package for Laravel.
 
 ## Installation
 
-You can install the package via composer:
-
 ```bash
-composer require intrfce/laravel-frontend-enums
+composer require intrfce/ffflags
 ```
 
-## Usage
+## Defining Feature Flags
 
+Feature flags are defined as classes that extend `FeatureFlag`. You can generate one using the artisan command:
 
-### Just add the attribute!
+```bash
+php artisan make:feature MyFeature
+```
 
-Add the `#[PublishEnum]` attribute to any enum you want published to the frontend - it's that easy.
+This creates a class in `app/Features/MyFeature.php`.
+
+### Name and Description
+
+You can set a name and description using class properties:
 
 ```php
-use Intrfce\LaravelFrontendEnums\Attributes\PublishEnum;
+use Intrfce\FFFlags\FeatureFlag;
 
-#[PublishEnum]
-enum MyEnum: string {
-    case Foo = 'foo';
-    case Bar = 'bar';
+class MyFeature extends FeatureFlag
+{
+    protected string $name = 'My Feature';
+
+    protected string $description = 'Controls the display of a certain feature';
 }
 ```
 
-Then run the publish command:
-
-```bash
-php artisan publish:enums-to-javascript
-```
-
-Your enums will be waiting at `resources/js/Enums` with the extension `.enum.js`:
-
-```js
-import {MyEnum} from './Enums/MyEnum.enum.js';
-
-console.log(MyEnum.Foo); // 'foo'
-```
-
-### Configuration
-
-Publish the config file to customise the output path and discovery directories:
-
-```bash
-php artisan vendor:publish --tag=config --provider="Intrfce\LaravelFrontendEnums\LaravelFrontendEnumsServiceProvider"
-```
+Or using attributes:
 
 ```php
-// config/laravel-frontend-enums.php
-return [
-    
-    // Customise the output directory.
-    'publish_to' => resource_path('js/Enums'),
-    
-    // Customise the folders scanned for enum classes
-    'discover_in' => [
-        app_path(),
-    ],
-    
-    // Always output as typescript enums.
-    'as_typescript' => true,
-    
-];
-```
+use Intrfce\FFFlags\Attributes\Description;
+use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\FeatureFlag;
 
-The `discover_in` array supports glob patterns, which is useful for modular or monorepo layouts:
-
-```php
-'discover_in' => [
-    app_path(),
-    base_path('app-modules/*/src'),
-],
-```
-
-## Typescript Support
-
-Enable TypeScript output globally via the config file:
-
-```php
-'as_typescript' => true,
-```
-
-Or override per-enum using the attribute:
-
-```php
-#[PublishEnum(asTypescript: true)]  // Force TypeScript for this enum
-#[PublishEnum(asTypescript: false)] // Force JavaScript for this enum
-#[PublishEnum]                      // Follow the global config setting
-```
-
-TypeScript enums are output as `.ts` files:
-
-```ts
-export enum MyEnum {
-    Foo = "foo",
-    Bar = "bar",
+#[Name('My Feature')]
+#[Description('Controls the display of a certain feature')]
+class MyFeature extends FeatureFlag
+{
+    //
 }
 ```
 
-## Automatically generate javascript files on change.
+Properties take priority over attributes. If neither is set, the name falls back to the class name and the description defaults to an empty string.
 
-You can use the [`vite-plugin-watch`](https://github.com/lepikhinb/vite-plugin-watch) package from [lepikhinb](https://github.com/lepikhinb) to automatically generate your javascript files when you make changes to your PHP enums:
+## Resolving Feature Flags
+
+To determine if a feature flag is active, implement a `resolve` method on your feature class. The `resolve` method must return a boolean.
+
+The method signature is flexible — you can type-hint any scope you need:
 
 ```php
-npm install -D vite-plugin-watch
+#[Name('My Feature')]
+#[Description('Controls the display of a certain feature')]
+class MyFeature extends FeatureFlag
+{
+    public function resolve(User $user): bool
+    {
+        return in_array($user->email, ['me@mymail.com']);
+    }
+}
 ```
 
-Then add the plugin to your `vite.config.js`:
+If no `resolve` method is defined, the feature defaults to inactive.
 
-```js
-import { defineConfig } from "vite"
-import { watch } from "vite-plugin-watch"
+## Checking Feature Flags
 
-export default defineConfig({
-  plugins: [ 
-    watch({
-      pattern: "app/Enums/**/*.php",
-      command: "php artisan publish:enums-to-javascript",
-    }),
-  ],
-})
+### Direct Class Usage
+
+Call `for()` on the feature class directly, passing your scope, then call `isActive()`:
+
+```php
+MyFeature::for($user)->isActive(); // true or false
 ```
 
-### Changelog
+### Facade Usage
 
-Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+Use the `FeatureFlag` facade to check one or more features:
 
-## Contributing
+```php
+use Intrfce\FFFlags\Facades\FeatureFlag;
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+// Check a single feature.
+FeatureFlag::for($user)->isActive(MyFeature::class);
 
-### Security
+// Check if any of the given features are active.
+FeatureFlag::for($user)->anyActive([
+    MyFeature::class,
+    MySecondFeature::class,
+]);
 
-If you discover any security related issues, please email dan@danmatthews.me instead of using the issue tracker.
+// Check if all of the given features are active.
+FeatureFlag::for($user)->allActive([
+    MyFeature::class,
+    MySecondFeature::class,
+]);
+```
 
-## Credits
+## Scope Type Safety
 
--   [Dan Matthews](https://github.com/intrfce)
--   [All Contributors](../../contributors)
+If the type of the object passed to `for()` does not match the type-hint on the `resolve` method, a `ScopeTypeMismatchException` is thrown:
+
+```php
+class MyFeature extends FeatureFlag
+{
+    public function resolve(User $user): bool
+    {
+        return true;
+    }
+}
+
+// Throws ScopeTypeMismatchException — expects User, got Team.
+MyFeature::for($team)->isActive();
+```
 
 ## License
 
