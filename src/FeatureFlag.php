@@ -2,10 +2,10 @@
 
 namespace Intrfce\FFFlags;
 
-use Illuminate\Support\Str;
 use Intrfce\FFFlags\Attributes\Description;
 use Intrfce\FFFlags\Attributes\Name;
-use Intrfce\FFFlags\Exceptions\MissingFeatureFlagNameException;
+use Intrfce\FFFlags\Attributes\Slug;
+use Intrfce\FFFlags\Exceptions\MissingFeatureFlagSlugException;
 use ReflectionClass;
 
 abstract class FeatureFlag
@@ -20,29 +20,25 @@ abstract class FeatureFlag
     public function getName(): string
     {
         $ref = new ReflectionClass($this);
-        $attrs = $ref->getAttributes(Name::class);
+        $nameAttrs = $ref->getAttributes(Name::class);
 
-        if (count($attrs) > 0) {
-            return $attrs[0]->newInstance()->name;
+        if (count($nameAttrs) > 0) {
+            return $nameAttrs[0]->newInstance()->name;
         }
 
-        throw new MissingFeatureFlagNameException(get_class($this));
+        return $this->getSlug();
     }
 
     public function getSlug(): string
     {
         $ref = new ReflectionClass($this);
-        $attrs = $ref->getAttributes(Name::class);
+        $attrs = $ref->getAttributes(Slug::class);
 
         if (count($attrs) > 0) {
-            $nameAttr = $attrs[0]->newInstance();
-
-            if ($nameAttr->slug !== null && $nameAttr->slug !== '') {
-                return $nameAttr->slug;
-            }
+            return $attrs[0]->newInstance()->slug;
         }
 
-        return Str::slug($this->getName());
+        throw new MissingFeatureFlagSlugException(get_class($this));
     }
 
     public function getDescription(): string

@@ -19,8 +19,8 @@ it('creates a feature flag class', function () {
     expect($contents)->toContain('namespace App\\Features;');
     expect($contents)->toContain('class TestFeature extends FeatureFlag');
     expect($contents)->toContain('use Intrfce\\FFFlags\\FeatureFlag;');
-    expect($contents)->toContain('use Intrfce\\FFFlags\\Attributes\\Name;');
-    expect($contents)->toContain("#[Name('TestFeature', 'test-feature')]");
+    expect($contents)->toContain('use Intrfce\\FFFlags\\Attributes\\Slug;');
+    expect($contents)->toContain("#[Slug('test-feature')]");
     expect($contents)->toContain('public function resolve(): bool');
 
     // Clean up.

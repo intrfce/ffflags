@@ -2,6 +2,52 @@
 
 return [
 
-    //
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Path
+    |--------------------------------------------------------------------------
+    |
+    | The URI path where the FFFlags dashboard will be accessible.
+    |
+    */
+
+    'path' => 'ffflags',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Middleware
+    |--------------------------------------------------------------------------
+    |
+    | The middleware stack applied to the FFFlags dashboard route. By default,
+    | it uses the web middleware group, requires authentication, and checks
+    | the 'view-ffflags-dashboard' gate. You can customise this to suit your
+    | application's needs.
+    |
+    */
+
+    'middleware' => [
+        'web',
+        'auth',
+        'can:view-ffflags-dashboard',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Feature Flag Discovery
+    |--------------------------------------------------------------------------
+    |
+    | Configure how FFFlags discovers your feature flag classes. By default,
+    | it scans the app/Features directory (where make:feature places them).
+    | You can add additional directories or explicitly register classes
+    | that live in non-standard locations (e.g., in packages).
+    |
+    */
+
+    'discovery' => [
+        'directories' => [
+            'app/Features',
+        ],
+        'classes' => [],
+    ],
 
 ];

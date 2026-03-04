@@ -4,8 +4,10 @@ namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
 use Intrfce\FFFlags\Attributes\Description;
 use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
 use Intrfce\FFFlags\FeatureFlag;
 
+#[Slug('attribute-name')]
 #[Name('Attribute Name')]
 #[Description('Attribute Description')]
 class BothNameFeature extends FeatureFlag

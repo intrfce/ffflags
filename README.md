@@ -30,14 +30,35 @@ php artisan make:feature MyFeature
 
 This creates a class in `app/Features/MyFeature.php`.
 
-### Name and Slug
+### Slug (Required)
 
-Every feature flag **must** have a name, set using the `#[Name]` attribute. The name is used to generate a slug, which is what gets stored in the database:
+Every feature flag **must** have a `#[Slug]` attribute. The slug is what gets stored in the database:
+
+```php
+use Intrfce\FFFlags\Attributes\Slug;
+use Intrfce\FFFlags\FeatureFlag;
+
+#[Slug('my-feature')]
+class MyFeature extends FeatureFlag
+{
+    //
+}
+```
+
+If no `#[Slug]` attribute is set, a `MissingFeatureFlagSlugException` will be thrown.
+
+When generating a feature with `php artisan make:feature MyFeature`, the slug is automatically kebab-cased from the class name (e.g. `MyFeature` becomes `my-feature`).
+
+### Name (Optional)
+
+You can optionally add a `#[Name]` attribute for a human-readable display name. If not provided, the slug is used as the display name:
 
 ```php
 use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
 use Intrfce\FFFlags\FeatureFlag;
 
+#[Slug('my-feature')]
 #[Name('My Feature')]
 class MyFeature extends FeatureFlag
 {
@@ -45,28 +66,16 @@ class MyFeature extends FeatureFlag
 }
 ```
 
-If no name is set, a `MissingFeatureFlagNameException` will be thrown.
+### Description (Optional)
 
-By default, the slug is generated from the name using `Str::slug()` (e.g. `'My Feature'` becomes `'my-feature'`). You can provide a custom slug as the second argument to `#[Name]`:
-
-```php
-#[Name('My Feature', 'custom-slug')]
-class MyFeature extends FeatureFlag
-{
-    //
-}
-```
-
-### Description
-
-Descriptions are optional and can be set using the `#[Description]` attribute:
+Descriptions can be set using the `#[Description]` attribute:
 
 ```php
 use Intrfce\FFFlags\Attributes\Description;
-use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
 use Intrfce\FFFlags\FeatureFlag;
 
-#[Name('My Feature')]
+#[Slug('my-feature')]
 #[Description('Controls the display of a certain feature')]
 class MyFeature extends FeatureFlag
 {
@@ -275,13 +284,36 @@ FeatureFlag::purgeAll();
 
 This clears both the database and the in-memory cache.
 
+## Dashboard
+
+FFFlags includes a dashboard route at `/ffflags`. Access is controlled by a Laravel gate called `view-ffflags-dashboard`. By default, all access is denied. To grant access, define the gate in one of your service providers:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('view-ffflags-dashboard', function (User $user) {
+    return in_array($user->email, [
+        'admin@example.com',
+    ]);
+});
+```
+
+You can customise the dashboard path in the config file:
+
+```php
+// config/ffflags.php
+return [
+    'path' => 'admin/ffflags',
+];
+```
+
 ## Exceptions
 
 FFFlags throws descriptive exceptions to help you catch configuration issues early. All exceptions are in the `Intrfce\FFFlags\Exceptions` namespace.
 
 | Exception | When it's thrown |
 |---|---|
-| `MissingFeatureFlagNameException` | A feature flag class has no name set. Set a `$name` property or add the `#[Name]` attribute. |
+| `MissingFeatureFlagSlugException` | A feature flag class has no slug set. Add the `#[Slug]` attribute. |
 | `InvalidScopeException` | A non-null scope was passed that is not an Eloquent model. Only `null` or `Model` instances are supported as scopes. |
 | `ScopeTypeMismatchException` | The scope passed to `for()` does not match the type-hint on the feature's `resolve()` method (e.g. passed a `Team` when `resolve(User $user)` was expected). |
 | `ScopeRequiredException` | `FeatureFlag::isActive()` was called directly on the facade for a feature that requires a scope. Use `FeatureFlag::for($scope)->isActive()` instead. |

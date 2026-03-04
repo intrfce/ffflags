@@ -1,6 +1,6 @@
 <?php
 
-use Intrfce\FFFlags\Exceptions\MissingFeatureFlagNameException;
+use Intrfce\FFFlags\Exceptions\MissingFeatureFlagSlugException;
 use Intrfce\FFFlags\PendingSingleFeatureInteraction;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysActiveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysInactiveFeature;
@@ -14,17 +14,17 @@ it('resolves name from attribute', function () {
     expect($feature->getName())->toBe('Attribute Name');
 });
 
-it('throws when no name is set', function () {
-    $feature = new class extends \Intrfce\FFFlags\FeatureFlag {};
-    $feature->getName();
-})->throws(MissingFeatureFlagNameException::class);
-
-it('resolves slug from attribute', function () {
-    $feature = new #[\Intrfce\FFFlags\Attributes\Name('Test', 'attr-slug')] class extends \Intrfce\FFFlags\FeatureFlag {};
-    expect($feature->getSlug())->toBe('attr-slug');
+it('falls back to slug when no name attribute is set', function () {
+    $feature = new ScopedFeature();
+    expect($feature->getName())->toBe('scoped-feature');
 });
 
-it('falls back to Str::slug of name for slug', function () {
+it('throws when no slug is set', function () {
+    $feature = new class extends \Intrfce\FFFlags\FeatureFlag {};
+    $feature->getSlug();
+})->throws(MissingFeatureFlagSlugException::class);
+
+it('resolves slug from attribute', function () {
     $feature = new AttributeNameFeature();
     expect($feature->getSlug())->toBe('attribute-name');
 });

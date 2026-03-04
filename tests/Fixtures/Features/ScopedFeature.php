@@ -2,11 +2,11 @@
 
 namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
-use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
 use Intrfce\FFFlags\FeatureFlag;
 use Intrfce\FFFlags\Tests\Fixtures\User;
 
-#[Name('Scoped Feature')]
+#[Slug('scoped-feature')]
 class ScopedFeature extends FeatureFlag
 {
     public function resolve(User $user): bool

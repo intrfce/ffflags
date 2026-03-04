@@ -2,20 +2,16 @@
 
 use Intrfce\FFFlags\Attributes\Description;
 use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
+
+it('stores slug value', function () {
+    $attr = new Slug('test-slug');
+    expect($attr->slug)->toBe('test-slug');
+});
 
 it('stores name value', function () {
     $attr = new Name('Test Name');
     expect($attr->name)->toBe('Test Name');
-});
-
-it('stores slug as null by default', function () {
-    $attr = new Name('Test Name');
-    expect($attr->slug)->toBeNull();
-});
-
-it('stores custom slug when provided', function () {
-    $attr = new Name('Test Name', 'custom-slug');
-    expect($attr->slug)->toBe('custom-slug');
 });
 
 it('stores description value', function () {
