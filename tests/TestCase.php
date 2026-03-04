@@ -2,7 +2,7 @@
 
 namespace Intrfce\FFFlags\Tests;
 
-use Intrfce\FFFlags\FFlagsServiceProvider;
+use Intrfce\FFFlags\FFFlagsServiceProvider;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
@@ -10,7 +10,7 @@ class TestCase extends BaseTestCase
     protected function getPackageProviders($app): array
     {
         return [
-            FFlagsServiceProvider::class,
+            FFFlagsServiceProvider::class,
         ];
     }
 

@@ -2,19 +2,20 @@
 
 namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
+use Intrfce\FFFlags\Attributes\BypassStorage;
 use Intrfce\FFFlags\Attributes\Name;
 use Intrfce\FFFlags\FeatureFlag;
-use Intrfce\FFFlags\Tests\Fixtures\User;
 
-#[Name('Counting Feature')]
-class CountingFeature extends FeatureFlag
+#[Name('Bypass Storage')]
+#[BypassStorage]
+class BypassStorageFeature extends FeatureFlag
 {
     public static int $resolveCount = 0;
 
-    public function resolve(User $user): bool
+    public function resolve(): bool
     {
         static::$resolveCount++;
 
-        return $user->email === 'active@example.com';
+        return true;
     }
 }

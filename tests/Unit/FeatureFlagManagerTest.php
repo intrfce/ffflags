@@ -1,9 +1,12 @@
 <?php
 
+use Intrfce\FFFlags\Exceptions\ScopeRequiredException;
 use Intrfce\FFFlags\FeatureFlagManager;
+use Intrfce\FFFlags\Models\FeatureFlagResult;
 use Intrfce\FFFlags\PendingFeatureInteraction;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysActiveFeature;
 use Intrfce\FFFlags\Tests\Fixtures\Features\AlwaysInactiveFeature;
+use Intrfce\FFFlags\Tests\Fixtures\Features\ScopedFeature;
 
 it('returns PendingFeatureInteraction from for()', function () {
     $manager = app(FeatureFlagManager::class);
@@ -54,4 +57,28 @@ it('returns false for allActive when at least one is inactive', function () {
 it('returns true for allActive with empty array', function () {
     $manager = app(FeatureFlagManager::class);
     expect($manager->for(null)->allActive([]))->toBeTrue();
+});
+
+it('resolves isActive directly for scopeless features', function () {
+    $manager = app(FeatureFlagManager::class);
+    expect($manager->isActive(AlwaysActiveFeature::class))->toBeTrue();
+    expect($manager->isActive(AlwaysInactiveFeature::class))->toBeFalse();
+});
+
+it('throws ScopeRequiredException when calling isActive on a scoped feature', function () {
+    $manager = app(FeatureFlagManager::class);
+    $manager->isActive(ScopedFeature::class);
+})->throws(ScopeRequiredException::class);
+
+it('purges all cached results from database and memory', function () {
+    $manager = app(FeatureFlagManager::class);
+
+    // Populate caches.
+    $manager->isActive(AlwaysActiveFeature::class);
+    expect(FeatureFlagResult::count())->toBe(1);
+
+    $manager->purgeAll();
+
+    expect(FeatureFlagResult::count())->toBe(0);
+    expect($manager->getFromMemory('always-active::'))->toBeNull();
 });

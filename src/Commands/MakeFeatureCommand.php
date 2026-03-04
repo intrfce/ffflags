@@ -3,6 +3,7 @@
 namespace Intrfce\FFFlags\Commands;
 
 use Illuminate\Console\GeneratorCommand;
+use Illuminate\Support\Str;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'make:feature')]
@@ -26,5 +27,14 @@ class MakeFeatureCommand extends GeneratorCommand
     protected function getDefaultNamespace($rootNamespace): string
     {
         return $rootNamespace.'\\Features';
+    }
+
+    protected function buildClass($name): string
+    {
+        $class = parent::buildClass($name);
+
+        $className = class_basename($name);
+
+        return str_replace('{{ slug }}', Str::kebab($className), $class);
     }
 }

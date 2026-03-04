@@ -2,8 +2,10 @@
 
 namespace {{ namespace }};
 
+use Intrfce\FFFlags\Attributes\Name;
 use Intrfce\FFFlags\FeatureFlag;
 
+#[Name('{{ class }}', '{{ slug }}')]
 class {{ class }} extends FeatureFlag
 {
     /**
