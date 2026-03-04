@@ -2,8 +2,8 @@
 
 namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
-use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
 use Intrfce\FFFlags\FeatureFlag;
 
-#[Name('No Resolve Feature')]
+#[Slug('no-resolve-feature')]
 class NoResolveFeature extends FeatureFlag {}

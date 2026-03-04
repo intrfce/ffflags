@@ -3,10 +3,10 @@
 namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
 use Intrfce\FFFlags\Attributes\BypassStorage;
-use Intrfce\FFFlags\Attributes\Name;
+use Intrfce\FFFlags\Attributes\Slug;
 use Intrfce\FFFlags\FeatureFlag;
 
-#[Name('Bypass Storage')]
+#[Slug('bypass-storage')]
 #[BypassStorage]
 class BypassStorageFeature extends FeatureFlag
 {
