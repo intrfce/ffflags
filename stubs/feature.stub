@@ -1,0 +1,16 @@
+<?php
+
+namespace {{ namespace }};
+
+use Intrfce\FFFlags\FeatureFlag;
+
+class {{ class }} extends FeatureFlag
+{
+    /**
+     * Resolve the feature flag.
+     */
+    public function resolve(): bool
+    {
+        return false;
+    }
+}

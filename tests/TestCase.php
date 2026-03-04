@@ -1,24 +1,37 @@
 <?php
 
-namespace Intrfce\LaravelFrontendEnums\Tests;
+namespace Intrfce\FFFlags\Tests;
 
-use Intrfce\LaravelFrontendEnums\LaravelFrontendEnumsServiceProvider;
-use Intrfce\LaravelFrontendEnums\Tests\Providers\TestApplicationServiceProvider;
-use Orchestra\Testbench\TestCase as OrchestraTestCase;
+use Intrfce\FFFlags\FFlagsServiceProvider;
+use Orchestra\Testbench\TestCase as BaseTestCase;
 
-class TestCase extends OrchestraTestCase
+class TestCase extends BaseTestCase
 {
-    /**
-     * Get package providers.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return array<int, class-string<\Illuminate\Support\ServiceProvider>>
-     */
     protected function getPackageProviders($app): array
     {
         return [
-            LaravelFrontendEnumsServiceProvider::class,
-            TestApplicationServiceProvider::class,
+            FFlagsServiceProvider::class,
         ];
+    }
+
+    protected function getPackageAliases($app): array
+    {
+        return [
+            'FeatureFlag' => \Intrfce\FFFlags\Facades\FeatureFlag::class,
+        ];
+    }
+
+    protected function defineEnvironment($app): void
+    {
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+        ]);
+    }
+
+    protected function defineDatabaseMigrations(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 }

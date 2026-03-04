@@ -1,11 +1,11 @@
 {
-  "name": "intrfce/laravel-frontend-enums",
-  "description": "Stop using 'magic' strings/numbers in your frontend Javascript and use your actual application enums instead.",
+  "name": "intrfce/ffflags",
+  "description": "",
   "keywords": [
     "intrfce",
-    "laravel-frontend-enums"
+    "ffflags"
   ],
-  "homepage": "https://github.com/intrfce/laravel-frontend-enums",
+  "homepage": "https://github.com/intrfce/ffflags",
   "license": "MIT",
   "type": "library",
   "authors": [
@@ -17,23 +17,21 @@
   ],
   "require": {
     "php": "^8.4.0",
-    "laravel/framework": "^11.0 || ^12.0",
-    "laravel/prompts": "v0.*",
-    "spatie/php-structure-discoverer": "^2.0"
+    "illuminate/console": "^11.0 || ^12.0",
+    "illuminate/support": "^11.0 || ^12.0"
   },
   "require-dev": {
     "orchestra/testbench": "^9.5 || ^10.0",
-    "pestphp/pest": "^2.32 || ^3.7",
-    "tightenco/duster": "^2.5"
+    "pestphp/pest": "^2.32 || ^3.7"
   },
   "autoload": {
     "psr-4": {
-      "Intrfce\\LaravelFrontendEnums\\": "src"
+      "Intrfce\\FFFlags\\": "src"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "Intrfce\\LaravelFrontendEnums\\Tests\\": "tests"
+      "Intrfce\\FFFlags\\Tests\\": "tests"
     }
   },
   "scripts": {
@@ -49,10 +47,10 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Intrfce\\LaravelFrontendEnums\\LaravelFrontendEnumsServiceProvider"
+        "Intrfce\\FFFlags\\FFlagsServiceProvider"
       ],
       "aliases": {
-        "PublishEnums": "Intrfce\\LaravelFrontendEnums\\Facades\\PublishEnums"
+        "FeatureFlag": "Intrfce\\FFFlags\\Facades\\FeatureFlag"
       }
     }
   }
