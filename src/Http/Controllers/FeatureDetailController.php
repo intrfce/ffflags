@@ -41,7 +41,7 @@ class FeatureDetailController
         return view('ffflags::feature-detail', [
             'feature' => $feature,
             'models' => $models,
-            'modelName' => $feature->hasModelRules ? class_basename($feature->modelClass) : null,
+            'modelName' => $feature->getModelScopeLabel(),
             'currentRule' => $currentRule,
             'conditions' => ScopeCondition::cases(),
         ]);

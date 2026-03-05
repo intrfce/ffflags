@@ -20,6 +20,19 @@ readonly class DiscoveredFeatureFlag
         public ?string $modelClass,
     ) {}
 
+    public function getModelScopeLabel(): ?string
+    {
+        if (! $this->hasModelRules || ! $this->modelClass) {
+            return null;
+        }
+
+        if (method_exists($this->modelClass, 'featureFlagModelLabel')) {
+            return $this->modelClass::featureFlagModelLabel();
+        }
+
+        return class_basename($this->modelClass);
+    }
+
     /**
      * @param class-string<FeatureFlag> $className
      */
