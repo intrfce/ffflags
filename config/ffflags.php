@@ -50,4 +50,21 @@ return [
         'classes' => [],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | JavaScript Usage
+    |--------------------------------------------------------------------------
+    |
+    | Configure how FFFlags publishes feature flags as JavaScript exports.
+    | Run `php artisan ffflags:publish-js` to generate the file.
+    | Set format to 'ts' to output TypeScript with typed interfaces.
+    |
+    */
+
+    'js_usage' => [
+        'output_directory' => 'resources/js/enums',
+        'filename' => 'flags',
+        'format' => 'js', // 'js' or 'ts'
+    ],
+
 ];
