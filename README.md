@@ -1,6 +1,21 @@
 # FFFlags
 
-A feature flag package for Laravel.
+An opinionated feature flag package for Laravel - heavily inspired by Laravel Pennant, but with the ability to conditionally allow access using a database-based list of conditions, providing some of the features a product like LaunchDarkly or Growthhub allows.
+
+
+### "Opinionated" ?
+
+- All feature flags must be classes with a `slug` provided via a `#[Slug]` attribute.
+- Arguments it currently allows as **scope** are restricted to Eloquent models, mostly for ease of storage, evaluation, and implementation.
+- Currently it only provides a database driver for feature and condition storage.
+
+## Progress
+
+- [ ] Unscoped (global) feature flags that are evaluated in code, with the result cached in memory (during the same request) and in the database (new requests).
+- [ ] 'Scoped' feature flags that can be passed any Eloquent model as an argument and use the `resolve()` function.
+- [ ] 'Managed' feature flags that allow access based on Eloquent models either whitelisted or blacklisted using a conditional structure.
+- [ ] A CLI artisan command to manage the eloquent models that either have, or don't have, access to a particular feature.
+- [ ] An API that allows a UI (separate package) to manage and display feature flags.
 
 ## Acknowledgements
 
@@ -22,7 +37,11 @@ php artisan migrate
 
 ## Defining Feature Flags
 
-Feature flags are defined as classes that extend `FeatureFlag`. You can generate one using the artisan command:
+There are two types of feature flag: **code-resolved** and **managed**.
+
+### Code-Resolved Feature Flags
+
+Code-resolved features extend `FeatureFlag` and are resolved entirely via a `resolve()` method. Generate one with:
 
 ```bash
 php artisan make:feature MyFeature
@@ -30,9 +49,52 @@ php artisan make:feature MyFeature
 
 This creates a class in `app/Features/MyFeature.php`.
 
+### Managed Feature Flags
+
+Managed features extend `ManagedFeatureFlag` and are resolved via database-stored conditions (which model IDs have access). Generate one with:
+
+```bash
+php artisan make:feature MyManagedFeature --managed
+php artisan make:feature MyManagedFeature --managed --model=App\Models\User
+```
+
+A managed feature must have a `#[Model]` attribute declaring the Eloquent model it expects as scope:
+
+```php
+use Intrfce\FFFlags\Attributes\Model;
+use Intrfce\FFFlags\Attributes\Slug;
+use Intrfce\FFFlags\ManagedFeatureFlag;
+use App\Models\User;
+
+#[Slug('beta-access')]
+#[Model(User::class)]
+class BetaAccess extends ManagedFeatureFlag
+{
+    //
+}
+```
+
+If no database rule exists for a managed feature, the `fallback()` method is called (returns `false` by default). You can override it:
+
+```php
+#[Slug('beta-access')]
+#[Model(User::class)]
+class BetaAccess extends ManagedFeatureFlag
+{
+    public function fallback(): bool
+    {
+        return true; // active for everyone by default
+    }
+}
+```
+
+Managed features are controlled via the `feature:activate` and `feature:deactivate` artisan commands or the `ActivateFeature` and `DeactivateFeature` action classes (see below).
+
 ### Slug (Required)
 
-Every feature flag **must** have a `#[Slug]` attribute. The slug is what gets stored in the database:
+Every feature flag **must** have a `#[Slug]` attribute.
+
+Slugs are _required_ - to prevent the need to store a fully qualified classname (i.e. `\App\Features\MyFeature`), or provide a `morphMap()` separately. This keeps them nice and co-located.
 
 ```php
 use Intrfce\FFFlags\Attributes\Slug;
@@ -82,6 +144,7 @@ class MyFeature extends FeatureFlag
     //
 }
 ```
+
 
 If no description is set, it defaults to an empty string.
 
@@ -201,7 +264,7 @@ use Illuminate\Http\Request;
 
 class MyFeature extends FeatureFlag implements ResolvingFromMiddleware
 {
-    public function resolveMiddlewareScope(Request $request): mixed
+    public function getScopeFromRequest(Request $request): mixed
     {
         return $request->user();
     }
@@ -284,6 +347,78 @@ FeatureFlag::purgeAll();
 
 This clears both the database and the in-memory cache.
 
+## Managing Feature Access via CLI
+
+For managed feature flags, use the `feature:activate` and `feature:deactivate` artisan commands to control which model IDs have access.
+
+### Activating
+
+```bash
+# Activate for specific model IDs (additive — existing IDs are kept)
+php artisan feature:activate beta-access --any=1,2,3,4
+
+# Replace the entire active list with the given IDs
+php artisan feature:activate beta-access --any=5,6 --replace
+```
+
+### Deactivating
+
+```bash
+# Remove specific model IDs from the active list
+php artisan feature:deactivate beta-access --any=2,3
+
+# Deactivate for ALL models (with confirmation prompt)
+php artisan feature:deactivate beta-access --all
+```
+
+The feature can be referenced by its slug, class basename, or fully qualified class name.
+
+### Using Action Classes Directly
+
+The commands delegate to action classes that can be used directly in your own code (e.g. from an API controller):
+
+```php
+use Intrfce\FFFlags\Actions\ActivateFeature;
+use Intrfce\FFFlags\Actions\DeactivateFeature;
+
+// Activate for model IDs 1, 2, 3 (additive)
+app(ActivateFeature::class)->handle(new BetaAccess(), [1, 2, 3]);
+
+// Replace the active list entirely
+app(ActivateFeature::class)->handle(new BetaAccess(), [5, 6], replace: true);
+
+// Remove specific IDs
+app(DeactivateFeature::class)->handle(new BetaAccess(), [2, 3]);
+
+// Deactivate for all
+app(DeactivateFeature::class)->handle(new BetaAccess(), all: true);
+```
+
+## Validating Feature Flags
+
+Use the `ffflags:validate` command to scan all discovered feature flags and report issues:
+
+```bash
+php artisan ffflags:validate
+```
+
+The command checks for:
+
+- **Feature count summary** — total features split into code-resolved and managed
+- **Duplicate slugs** — two or more feature classes sharing the same slug
+- **Missing `resolve()` methods** — code-resolved features that have no `resolve()` method
+- **Missing `#[Model]` attributes** — managed features without a `#[Model]` attribute
+
+The command exits with code `0` when all checks pass, or `1` when any issue is found.
+
+### Slug Uniqueness
+
+Slugs must be unique across all feature flags. Duplicate slugs are caught at multiple levels:
+
+- `make:feature` refuses to generate a feature if the slug already exists
+- `feature:activate` and `feature:deactivate` check for duplicates before proceeding
+- `ffflags:validate` reports all duplicate slugs in a single scan
+
 ## Dashboard
 
 FFFlags includes a dashboard route at `/ffflags`. Access is controlled by a Laravel gate called `view-ffflags-dashboard`. By default, all access is denied. To grant access, define the gate in one of your service providers:
@@ -320,6 +455,216 @@ FFFlags throws descriptive exceptions to help you catch configuration issues ear
 | `ScopeDoesNotHaveKeyException` | A model scope was passed that has not been persisted to the database (its primary key is `null`). Save the model before checking feature flags to avoid cache collisions. |
 | `ScopeProvidedButResolveHandlerMissingException` | A scope was provided when checking a feature, but the feature class does not have a `resolve()` method. |
 | `FeatureFlagNotResolvableFromMiddlewareException` | A scoped feature was used in middleware but does not implement the `ResolvingFromMiddleware` interface. Implement the interface or remove the scope parameter from `resolve()`. |
+| `InvalidModelAttributeException` | A non-Eloquent class was passed to the `#[Model]` attribute. Only `Model` subclasses are accepted. |
+| `MissingModelAttributeException` | A `ManagedFeatureFlag` subclass is missing the required `#[Model]` attribute. |
+
+## Test Scenarios
+
+A plain-English reference for every major scenario covered by the test suite, and what each resolves to.
+
+### Code-Resolved Feature Flags (`FeatureFlag`)
+
+#### Basic Resolution
+
+| Scenario | Result |
+|---|---|
+| Feature's `resolve()` returns `true`, no scope | **Active** |
+| Feature's `resolve()` returns `false`, no scope | **Inactive** |
+| Feature has no `resolve()` method and no scope is given | **Inactive** |
+| Feature's `resolve(User $user)` returns `true` for the given user | **Active** |
+| Feature's `resolve(User $user)` returns `false` for the given user | **Inactive** |
+
+#### Scope Validation Errors
+
+| Scenario | Result |
+|---|---|
+| Scope is not an Eloquent model (e.g. a string or `stdClass`) | `InvalidScopeException` |
+| Scope model has not been persisted (primary key is `null`) | `ScopeDoesNotHaveKeyException` |
+| Scope is provided but the feature has no `resolve()` method | `ScopeProvidedButResolveHandlerMissingException` |
+| Scope model type doesn't match the type-hint on `resolve()` (e.g. `Team` when `User` expected) | `ScopeTypeMismatchException` |
+| Feature has no `#[Slug]` attribute | `MissingFeatureFlagSlugException` |
+
+#### Manager-Level Checks
+
+| Scenario | Result |
+|---|---|
+| `isActive()` on a scopeless feature that resolves `true` | **Active** |
+| `isActive()` on a scopeless feature that resolves `false` | **Inactive** |
+| `isActive()` on a feature whose `resolve()` requires a scope parameter | `ScopeRequiredException` |
+| `anyActive([...])` — at least one feature is active | **`true`** |
+| `anyActive([...])` — no features are active | **`false`** |
+| `anyActive([])` — empty array | **`false`** |
+| `allActive([...])` — all features are active | **`true`** |
+| `allActive([...])` — at least one feature is inactive | **`false`** |
+| `allActive([])` — empty array | **`true`** |
+| `purgeAll()` called | All database rows and in-memory cache entries are cleared |
+
+### Managed Feature Flags (`ManagedFeatureFlag`)
+
+#### Condition Types
+
+The database stores a `condition` and `value` (array of model IDs) for each feature/scope-type pair:
+
+| Condition | Scope ID **in** the value list | Scope ID **not in** the value list |
+|---|---|---|
+| `Equals` | **Active** | **Inactive** |
+| `DoesNotEqual` | **Inactive** | **Active** |
+| `IsOneOf` | **Active** | **Inactive** |
+| `IsNoneOf` | **Inactive** | **Active** |
+
+#### Fallback Behaviour
+
+| Scenario | Result |
+|---|---|
+| No database rule exists for this feature/scope type | Returns `fallback()` (defaults to `false`) |
+| Database rule exists and condition matches | **Active** — database rule takes priority |
+| Database rule exists and condition does not match | **Inactive** — database rule takes priority |
+
+#### Scope Validation Errors (Managed)
+
+| Scenario | Result |
+|---|---|
+| No scope provided (`null`) | `ScopeRequiredException` |
+| Scope is not an Eloquent model | `InvalidScopeException` |
+| Scope model has no primary key (not persisted) | `ScopeDoesNotHaveKeyException` |
+| Scope model type doesn't match the class declared in `#[Model]` | `ScopeTypeMismatchException` |
+| `ManagedFeatureFlag` subclass is missing `#[Model]` attribute | `MissingModelAttributeException` |
+
+#### `#[Model]` Attribute Validation
+
+| Scenario | Result |
+|---|---|
+| `#[Model(User::class)]` where `User` extends Eloquent `Model` | Accepted |
+| `#[Model(stdClass::class)]` where the class is not an Eloquent model | `InvalidModelAttributeException` |
+
+### Activate / Deactivate Actions
+
+#### `ActivateFeature`
+
+| Scenario | Result |
+|---|---|
+| No existing rule — activate for IDs `[1, 2, 3]` | Creates `IsOneOf` rule with value `[1, 2, 3]` |
+| Existing rule with `[1, 2]` — activate `[2, 3, 4]` (default, additive) | Value becomes `[1, 2, 3, 4]` |
+| Existing rule with `[1, 2, 3]` — activate `[5, 6]` with `replace: true` | Value becomes `[5, 6]` |
+| Activate with duplicate IDs `[1, 1, 2, 2, 3]` | Deduplicated to `[1, 2, 3]` |
+
+#### `DeactivateFeature`
+
+| Scenario | Result |
+|---|---|
+| Existing rule with `[1, 2, 3, 4]` — deactivate `[2, 3]` | Value becomes `[1, 4]` |
+| Existing rule with `[1, 2, 3, 4, 5]` — deactivate `[1]` | Value becomes `[2, 3, 4, 5]` |
+| Existing rule with `[1, 2, 3]` — deactivate with `all: true` | Value becomes `[]` |
+| No existing rule — deactivate `[1, 2]` | No-op, nothing happens |
+
+### Result Caching
+
+| Scenario | Result |
+|---|---|
+| First evaluation of a feature+scope | `resolve()` is called; result stored in database and memory |
+| Same feature+scope again in the same request | In-memory cache hit; `resolve()` is **not** called again |
+| Same feature+scope on a fresh request (new manager) | Database cache hit; `resolve()` is **not** called again |
+| `#[BypassStorage]` — same request, same feature+scope | In-memory cache hit; `resolve()` is **not** called again |
+| `#[BypassStorage]` — fresh request, same feature+scope | `resolve()` **is** called again (no database cache) |
+| `#[BypassStorage]` — after evaluation | No row is written to the database |
+| Scopeless feature evaluated | Cached with `null` scope type and scope ID |
+| Two different scopes for the same feature | Each gets its own independent cached result |
+
+### Middleware
+
+#### Single Feature (`is` mode)
+
+| Scenario | Result |
+|---|---|
+| Feature is active, no scope needed | Request proceeds |
+| Feature is inactive, no scope needed | **403 abort** |
+| Scoped feature implements `ResolvingFromMiddleware`, scope resolves active | Request proceeds |
+| Scoped feature implements `ResolvingFromMiddleware`, scope resolves inactive | **403 abort** |
+| Scoped feature does **not** implement `ResolvingFromMiddleware` | `FeatureFlagNotResolvableFromMiddlewareException` |
+
+#### Multiple Features (`all` mode)
+
+| Scenario | Result |
+|---|---|
+| All features are active | Request proceeds |
+| At least one feature is inactive | **403 abort** |
+
+#### Multiple Features (`any` mode)
+
+| Scenario | Result |
+|---|---|
+| At least one feature is active | Request proceeds |
+| No features are active | **403 abort** |
+
+#### Custom `whenInactive` Callback
+
+| Scenario | Result |
+|---|---|
+| Callback registered, feature is inactive | Callback invoked; its response is returned |
+| Callback registered, feature is active | Callback is **not** invoked; request proceeds |
+
+### Artisan Commands
+
+#### `make:feature`
+
+| Scenario | Result |
+|---|---|
+| `make:feature TestFeature` | Creates class extending `FeatureFlag` with `resolve()` stub |
+| `make:feature ManagedTest --managed` | Creates class extending `ManagedFeatureFlag` with `#[Model]` attribute |
+| `make:feature ManagedTest --managed --model=App\Models\User` | Same, with `#[Model(User::class)]` pre-filled |
+
+#### `feature:activate`
+
+| Scenario | Result |
+|---|---|
+| `feature:activate my-feature --any=1,2,3` | Activates IDs 1, 2, 3 (additive with existing list) |
+| `feature:activate my-feature --any=5,6 --replace` | Replaces the entire active list with IDs 5, 6 |
+
+#### `feature:deactivate`
+
+| Scenario | Result |
+|---|---|
+| `feature:deactivate my-feature --any=2,3` | Removes IDs 2, 3 from the active list |
+| `feature:deactivate my-feature --all` | Clears the entire active list (with confirmation) |
+
+#### `ffflags:validate`
+
+| Scenario | Result |
+|---|---|
+| All features are valid (no duplicates, no missing methods) | Exit code `0`, "All checks passed" |
+| No features discovered | Exit code `0`, warning "No feature flags discovered" |
+| Two features share the same slug | Exit code `1`, reports the duplicate slug and conflicting classes |
+| Code-resolved feature is missing `resolve()` method | Exit code `1`, reports "missing resolve() method" |
+| Shows feature count summary | Outputs total, code-resolved, and managed counts |
+
+#### `make:feature` (slug validation)
+
+| Scenario | Result |
+|---|---|
+| Slug does not clash with any existing feature | Feature class is created |
+| Slug clashes with an existing feature | Error, feature is **not** created |
+
+### Discovery
+
+| Scenario | Result |
+|---|---|
+| Feature classes registered via config `classes` array | Discovered as `DiscoveredFeatureFlag` DTOs |
+| Feature classes found in configured directories | Discovered via filesystem scanning |
+| Non-existent directory in config | Silently ignored |
+| Same class registered twice | Deduplicated to one entry |
+| Discovery called multiple times | Cached after first call |
+| `flush()` then `discover()` | Cache cleared, features re-scanned |
+
+### Database Result Store
+
+| Scenario | Result |
+|---|---|
+| Store a result, then retrieve it | Returns the stored boolean |
+| Retrieve a result that was never stored | Returns `null` |
+| Store with `null` scope type and scope ID | Stored and retrievable with `null` scope |
+| Store twice for the same key | Second value overwrites the first; one row |
+| Delete a single result | That result returns `null`; others unaffected |
+| Purge all results | All rows removed |
 
 ## License
 

@@ -2,17 +2,17 @@
 
 namespace Intrfce\FFFlags\Tests\Fixtures\Features;
 
-use Intrfce\FFFlags\Attributes\ScopeWithModelRules;
+use Intrfce\FFFlags\Attributes\Model;
 use Intrfce\FFFlags\Attributes\Slug;
-use Intrfce\FFFlags\FeatureFlag;
+use Intrfce\FFFlags\ManagedFeatureFlag;
 use Intrfce\FFFlags\Tests\Fixtures\User;
 
 #[Slug('model-scoped-with-resolve')]
-#[ScopeWithModelRules(User::class)]
-class ModelScopedWithResolveFeature extends FeatureFlag
+#[Model(User::class)]
+class ModelScopedWithResolveFeature extends ManagedFeatureFlag
 {
-    public function resolve(User $user): bool
+    public function fallback(): bool
     {
-        return $user->email === 'active@example.com';
+        return false;
     }
 }

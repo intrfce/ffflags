@@ -28,7 +28,7 @@
             </div>
         @endif
 
-        @if($feature->hasModelRules)
+        @if($feature->isManaged)
             <div class="card bg-base-100 shadow" x-data="{
                 condition: '{{ $currentRule?->condition?->value ?? '' }}',
                 value: @js($currentRule?->value ?? []),

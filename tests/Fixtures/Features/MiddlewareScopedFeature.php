@@ -11,7 +11,7 @@ use Intrfce\FFFlags\Tests\Fixtures\User;
 #[Slug('middleware-scoped-feature')]
 class MiddlewareScopedFeature extends FeatureFlag implements ResolvingFromMiddleware
 {
-    public function resolveMiddlewareScope(Request $request): mixed
+    public function getScopeFromRequest(Request $request): mixed
     {
         $user = new User();
         $user->id = 1;

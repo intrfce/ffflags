@@ -1,0 +1,14 @@
+<?php
+
+namespace {{ namespace }};
+
+use Intrfce\FFFlags\Attributes\Model;
+use Intrfce\FFFlags\Attributes\Slug;
+use Intrfce\FFFlags\ManagedFeatureFlag;
+
+#[Slug('{{ slug }}')]
+#[Model({{ model }}::class)]
+class {{ class }} extends ManagedFeatureFlag
+{
+    //
+}

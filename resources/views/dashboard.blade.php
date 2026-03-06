@@ -39,7 +39,7 @@
                                         <a href="{{ route('ffflags.feature.show', $feature->slug) }}" class="link link-primary">
                                             {{ $feature->name }}
                                         </a>
-                                        @if($feature->hasModelRules)
+                                        @if($feature->isManaged)
                                             <div class="text-xs text-base-content/50 mt-0.5">Scoped to {{ $feature->getModelScopeLabel() }}</div>
                                         @endif
                                     </td>
@@ -50,7 +50,7 @@
                                         {{ $feature->description ?: '-' }}
                                     </td>
                                     <td>
-                                        @if($feature->hasModelRules)
+                                        @if($feature->isManaged)
                                             <a href="{{ route('ffflags.feature.show', $feature->slug) }}" class="btn btn-primary btn-sm">Configure</a>
                                         @else
                                             <span class="badge badge-neutral">Managed by code</span>
