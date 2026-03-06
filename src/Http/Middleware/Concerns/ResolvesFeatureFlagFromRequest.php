@@ -27,7 +27,7 @@ trait ResolvesFeatureFlagFromRequest
         }
 
         if ($requiresScope) {
-            $scope = $feature->resolveMiddlewareScope($request);
+            $scope = $feature->getScopeFromRequest($request);
 
             return $featureClass::for($scope)->isActive();
         }

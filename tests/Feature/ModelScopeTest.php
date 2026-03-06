@@ -123,39 +123,31 @@ it('returns false for IsNoneOf condition when scope ID is in array', function ()
     expect(ModelScopedFeature::for($user)->isActive())->toBeFalse();
 });
 
-it('falls back to resolve method when no model scope row exists', function () {
-    $activeUser = new User();
-    $activeUser->id = 1;
-    $activeUser->email = 'active@example.com';
-
-    $inactiveUser = new User();
-    $inactiveUser->id = 2;
-    $inactiveUser->email = 'other@example.com';
-
-    expect(ModelScopedWithResolveFeature::for($activeUser)->isActive())->toBeTrue();
-    expect(ModelScopedWithResolveFeature::for($inactiveUser)->isActive())->toBeFalse();
-});
-
-it('returns false when no model scope row and no resolve method', function () {
+it('returns fallback when no model scope row exists', function () {
     $user = new User();
     $user->id = 1;
 
     expect(ModelScopedFeature::for($user)->isActive())->toBeFalse();
 });
 
-it('prefers model scope over resolve method when row exists', function () {
+it('returns fallback value from custom fallback method', function () {
     $user = new User();
     $user->id = 1;
-    $user->email = 'other@example.com'; // resolve() would return false
+
+    expect(ModelScopedWithResolveFeature::for($user)->isActive())->toBeFalse();
+});
+
+it('prefers model scope over fallback when row exists', function () {
+    $user = new User();
+    $user->id = 1;
 
     FeatureFlagModelScope::create([
         'feature_slug' => 'model-scoped-with-resolve',
         'scope_type' => (new User())->getMorphClass(),
-        'condition' => ScopeCondition::Equals->value,
+        'condition' => ScopeCondition::IsOneOf->value,
         'value' => [1],
     ]);
 
-    // DB condition says active, even though resolve() would say inactive
     expect(ModelScopedWithResolveFeature::for($user)->isActive())->toBeTrue();
 });
 
@@ -164,8 +156,6 @@ it('throws ScopeRequiredException when no scope is provided', function () {
 })->throws(\Intrfce\FFFlags\Exceptions\ScopeRequiredException::class);
 
 it('throws ScopeTypeMismatchException for disallowed model type', function () {
-    // ModelScopedFeature only allows User::class
-    // Create a different model type to test with
     $otherModel = new class extends \Illuminate\Database\Eloquent\Model {
         protected $table = 'users';
     };

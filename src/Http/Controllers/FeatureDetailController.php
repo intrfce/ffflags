@@ -20,7 +20,7 @@ class FeatureDetailController
         $models = collect();
         $currentRule = null;
 
-        if ($feature->hasModelRules) {
+        if ($feature->isManaged) {
             $modelClass = $feature->modelClass;
 
             $models = $modelClass::all()->map(function ($model) {
@@ -52,7 +52,7 @@ class FeatureDetailController
         $feature = $discovery->discover()->firstWhere('slug', $slug);
 
         abort_if($feature === null, 404);
-        abort_if(! $feature->hasModelRules, 403);
+        abort_if(! $feature->isManaged, 403);
 
         $validated = $request->validate([
             'condition' => ['required', 'string', 'in:' . implode(',', array_column(ScopeCondition::cases(), 'value'))],
@@ -85,7 +85,7 @@ class FeatureDetailController
         $feature = $discovery->discover()->firstWhere('slug', $slug);
 
         abort_if($feature === null, 404);
-        abort_if(! $feature->hasModelRules, 403);
+        abort_if(! $feature->isManaged, 403);
 
         $validated = $request->validate([
             'scope_id' => ['required'],

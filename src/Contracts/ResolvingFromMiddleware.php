@@ -6,5 +6,5 @@ use Illuminate\Http\Request;
 
 interface ResolvingFromMiddleware
 {
-    public function resolveMiddlewareScope(Request $request): mixed;
+    public function getScopeFromRequest(Request $request): mixed;
 }

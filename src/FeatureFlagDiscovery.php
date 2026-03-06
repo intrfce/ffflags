@@ -61,6 +61,20 @@ class FeatureFlagDiscovery
         return $this->discovered;
     }
 
+    /**
+     * @return array<string, list<class-string<FeatureFlag>>> Slugs that appear more than once, mapped to their classes.
+     */
+    public function findDuplicateSlugs(): array
+    {
+        $slugMap = [];
+
+        foreach ($this->discover() as $flag) {
+            $slugMap[$flag->slug][] = $flag->class;
+        }
+
+        return array_filter($slugMap, fn (array $classes) => count($classes) > 1);
+    }
+
     public function flush(): void
     {
         $this->discovered = null;

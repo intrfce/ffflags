@@ -3,9 +3,12 @@
 namespace Intrfce\FFFlags;
 
 use Illuminate\Support\ServiceProvider;
+use Intrfce\FFFlags\Commands\ActivateFeatureCommand;
+use Intrfce\FFFlags\Commands\DeactivateFeatureCommand;
 use Intrfce\FFFlags\Commands\MakeFeatureCommand;
 use Intrfce\FFFlags\Commands\PublishJavaScriptFeatureFlagsCommand;
 use Intrfce\FFFlags\Commands\PurgeFeatureFlagResultsCommand;
+use Intrfce\FFFlags\Commands\ValidateFeatureFlagsCommand;
 use Intrfce\FFFlags\Contracts\ResultStore;
 use Intrfce\FFFlags\Drivers\DatabaseResultStore;
 
@@ -46,9 +49,12 @@ class FFFlagsServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                ActivateFeatureCommand::class,
+                DeactivateFeatureCommand::class,
                 MakeFeatureCommand::class,
                 PublishJavaScriptFeatureFlagsCommand::class,
                 PurgeFeatureFlagResultsCommand::class,
+                ValidateFeatureFlagsCommand::class,
             ]);
         }
     }

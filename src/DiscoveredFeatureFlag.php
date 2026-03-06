@@ -3,7 +3,7 @@
 namespace Intrfce\FFFlags;
 
 use Intrfce\FFFlags\Attributes\BypassStorage;
-use Intrfce\FFFlags\Attributes\ScopeWithModelRules;
+use Intrfce\FFFlags\Attributes\Model;
 use ReflectionClass;
 
 readonly class DiscoveredFeatureFlag
@@ -15,14 +15,14 @@ readonly class DiscoveredFeatureFlag
         public string $slug,
         public string $description,
         public bool $bypassesStorage,
-        public bool $hasModelRules,
+        public bool $isManaged,
         /** @var class-string<\Illuminate\Database\Eloquent\Model>|null */
         public ?string $modelClass,
     ) {}
 
     public function getModelScopeLabel(): ?string
     {
-        if (! $this->hasModelRules || ! $this->modelClass) {
+        if (! $this->isManaged || ! $this->modelClass) {
             return null;
         }
 
@@ -41,8 +41,8 @@ readonly class DiscoveredFeatureFlag
         $instance = new $className();
         $ref = new ReflectionClass($className);
 
-        $scopeAttrs = $ref->getAttributes(ScopeWithModelRules::class);
-        $hasModelRules = count($scopeAttrs) > 0;
+        $isManaged = is_subclass_of($className, ManagedFeatureFlag::class);
+        $modelAttrs = $ref->getAttributes(Model::class);
 
         return new self(
             class: $className,
@@ -50,8 +50,8 @@ readonly class DiscoveredFeatureFlag
             slug: $instance->getSlug(),
             description: $instance->getDescription(),
             bypassesStorage: count($ref->getAttributes(BypassStorage::class)) > 0,
-            hasModelRules: $hasModelRules,
-            modelClass: $hasModelRules ? $scopeAttrs[0]->newInstance()->model : null,
+            isManaged: $isManaged,
+            modelClass: count($modelAttrs) > 0 ? $modelAttrs[0]->newInstance()->model : null,
         );
     }
 }
