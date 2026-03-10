@@ -1,0 +1,14 @@
+{
+  "name": "ffflags-admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt generate",
+    "preview": "nuxt preview"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^3",
+    "nuxt": "^3.16"
+  }
+}

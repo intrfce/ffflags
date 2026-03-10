@@ -16,7 +16,7 @@ class FFFlagsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/ffflags.php', 'ffflags');
+        $this->mergeConfigFrom(__DIR__ . "/../config/ffflags.php", "ffflags");
 
         $this->app->singleton(ResultStore::class, DatabaseResultStore::class);
 
@@ -25,26 +25,39 @@ class FFFlagsServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(FeatureFlagDiscovery::class, function ($app) {
-            $config = $app['config']->get('ffflags.discovery', []);
+            $config = $app["config"]->get("ffflags.discovery", []);
 
             return new FeatureFlagDiscovery(
-                directories: $config['directories'] ?? ['app/Features'],
-                classes: $config['classes'] ?? [],
+                directories: $config["directories"] ?? ["app/Features"],
+                classes: $config["classes"] ?? [],
             );
         });
     }
 
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'ffflags');
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        $this->publishes(
+            [
+                __DIR__ . "/../config/ffflags.php" => config_path(
+                    "ffflags.php",
+                ),
+            ],
+            "ffflags-config",
+        );
 
-        $this->publishes([
-            __DIR__.'/../config/ffflags.php' => config_path('ffflags.php'),
-        ], 'ffflags-config');
+        $this->publishes(
+            [
+                __DIR__ . "/../nuxt/dist" => public_path("ffflags/admin"),
+            ],
+            "ffflags-admin-assets",
+        );
+
+        $this->loadViewsFrom(__DIR__ . "/../resources/views", "ffflags");
+        $this->loadRoutesFrom(__DIR__ . "/../routes/web.php");
+        $this->loadRoutesFrom(__DIR__ . "/../routes/api.php");
 
         $this->publishesMigrations([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
+            __DIR__ . "/../database/migrations" => database_path("migrations"),
         ]);
 
         if ($this->app->runningInConsole()) {

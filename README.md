@@ -15,7 +15,7 @@ An opinionated feature flag package for Laravel - heavily inspired by Laravel Pe
 - [ ] 'Scoped' feature flags that can be passed any Eloquent model as an argument and use the `resolve()` function.
 - [ ] 'Managed' feature flags that allow access based on Eloquent models either whitelisted or blacklisted using a conditional structure.
 - [ ] A CLI artisan command to manage the eloquent models that either have, or don't have, access to a particular feature.
-- [ ] An API that allows a UI (separate package) to manage and display feature flags.
+- [ ] A built-in admin panel (Nuxt 3 + NuxtUI) for managing and displaying feature flags, served as static assets via Laravel.
 
 ## Acknowledgements
 
@@ -440,6 +440,45 @@ You can customise the dashboard path in the config file:
 return [
     'path' => 'admin/ffflags',
 ];
+```
+
+## Admin Panel
+
+FFFlags ships with a modern admin panel built with Nuxt 3 and NuxtUI. To use it, publish the pre-built assets:
+
+```bash
+php artisan vendor:publish --tag=ffflags-admin-assets
+```
+
+This publishes the static admin panel to `public/ffflags/admin/`. Once published, the admin panel is available at `/ffflags/admin`.
+
+The admin panel uses the same middleware and gate as the Blade dashboard, so the `view-ffflags-dashboard` gate controls access to both.
+
+### Admin Panel API
+
+The admin panel communicates with your application via a JSON API at `/{path}-api/` (e.g. `/ffflags-api/`). The API uses the same authentication and authorisation middleware as the dashboard. The following endpoints are available:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/ffflags-api/features` | List all discovered feature flags |
+| `GET` | `/ffflags-api/features/{slug}` | Get feature detail with rules and available models |
+| `POST` | `/ffflags-api/features/{slug}` | Update a managed feature's model scope rule |
+| `POST` | `/ffflags-api/features/{slug}/check` | Test a rule against a specific model ID |
+
+### Rebuilding the Admin Panel
+
+If you need to customise the admin panel, the source is in the `nuxt/` directory. To rebuild:
+
+```bash
+cd nuxt
+npm install
+npm run build
+```
+
+Then re-publish the assets:
+
+```bash
+php artisan vendor:publish --tag=ffflags-admin-assets --force
 ```
 
 ## Exceptions
