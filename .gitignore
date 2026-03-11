@@ -3,6 +3,4 @@
 vendor
 node_modules
 composer.lock
-nuxt/.nuxt
-nuxt/.output
-nuxt/node_modules
+package-lock.json

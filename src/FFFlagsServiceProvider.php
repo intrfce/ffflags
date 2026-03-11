@@ -45,16 +45,8 @@ class FFFlagsServiceProvider extends ServiceProvider
             "ffflags-config",
         );
 
-        $this->publishes(
-            [
-                __DIR__ . "/../nuxt/dist" => public_path("ffflags/admin"),
-            ],
-            "ffflags-admin-assets",
-        );
-
         $this->loadViewsFrom(__DIR__ . "/../resources/views", "ffflags");
         $this->loadRoutesFrom(__DIR__ . "/../routes/web.php");
-        $this->loadRoutesFrom(__DIR__ . "/../routes/api.php");
 
         $this->publishesMigrations([
             __DIR__ . "/../database/migrations" => database_path("migrations"),
