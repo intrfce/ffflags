@@ -38,7 +38,7 @@ class FeatureDetailController
                 ->first();
         }
 
-        return view('ffflags::feature-detail', [
+        return view('ffflags::features.view', [
             'feature' => $feature,
             'models' => $models,
             'modelName' => $feature->getModelScopeLabel(),

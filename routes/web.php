@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Intrfce\FFFlags\Http\Controllers\AdminPanelController;
 use Intrfce\FFFlags\Http\Controllers\DashboardController;
 use Intrfce\FFFlags\Http\Controllers\FeatureDetailController;
 
@@ -23,8 +22,3 @@ Route::post($path . '/features/{slug}', [FeatureDetailController::class, 'update
 Route::post($path . '/features/{slug}/check', [FeatureDetailController::class, 'check'])
     ->middleware($middleware)
     ->name('ffflags.feature.check');
-
-Route::get($path . '/admin/{any?}', AdminPanelController::class)
-    ->where('any', '.*')
-    ->middleware($middleware)
-    ->name('ffflags.admin');
