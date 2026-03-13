@@ -52,6 +52,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Evaluation Logging
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, FFFlags will log each feature flag evaluation to the
+    | database (only on first evaluation, not subsequent cache hits).
+    | This allows you to see when and where flags are being checked
+    | from the admin dashboard.
+    |
+    */
+
+    'log_evaluations' => false,
+
+    /*
+    |--------------------------------------------------------------------------
     | JavaScript Usage
     |--------------------------------------------------------------------------
     |

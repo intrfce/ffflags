@@ -13,6 +13,7 @@ use Intrfce\FFFlags\Enums\ScopeCondition;
 use Intrfce\FFFlags\FeatureFlag;
 use Intrfce\FFFlags\FeatureFlagManager;
 use Intrfce\FFFlags\ManagedFeatureFlag;
+use Intrfce\FFFlags\Models\FeatureFlagEvaluation;
 use Intrfce\FFFlags\Models\FeatureFlagModelScope;
 use ReflectionClass;
 use ReflectionMethod;
@@ -81,6 +82,8 @@ trait ResolvesFeatureFlags
         $manager->storeInMemory($cacheKey, $result);
         $manager->getStore()->store($featureSlug, $scopeType, $scopeId, $result);
 
+        static::logEvaluation($featureSlug, $scopeType, $scopeId, $result, static::buildConditionsSnapshot($featureSlug, $scopeType));
+
         return $result;
     }
 
@@ -131,6 +134,8 @@ trait ResolvesFeatureFlags
             $manager->getStore()->store($featureSlug, $scopeType, $scopeId, $result);
         }
 
+        static::logEvaluation($featureSlug, $scopeType, $scopeId, $result, static::buildConditionsSnapshot($featureSlug, $scopeType));
+
         return $result;
     }
 
@@ -169,6 +174,69 @@ trait ResolvesFeatureFlags
         }
 
         return (bool) $feature->resolve($scope);
+    }
+
+    protected static function logEvaluation(string $featureSlug, ?string $scopeType, string|int|null $scopeId, bool $result, ?array $conditionsSnapshot = null): void
+    {
+        if (! config('ffflags.log_evaluations', false)) {
+            return;
+        }
+
+        $callSite = static::resolveCallSite();
+
+        FeatureFlagEvaluation::create([
+            'feature_slug' => $featureSlug,
+            'scope_type' => $scopeType,
+            'scope_id' => $scopeId,
+            'result' => $result,
+            'call_file' => $callSite['file'],
+            'call_line' => $callSite['line'],
+            'conditions_snapshot' => $conditionsSnapshot,
+        ]);
+    }
+
+    protected static function buildConditionsSnapshot(string $featureSlug, ?string $scopeType): ?array
+    {
+        if ($scopeType === null) {
+            return null;
+        }
+
+        $scope = FeatureFlagModelScope::query()
+            ->where('feature_slug', $featureSlug)
+            ->where('scope_type', $scopeType)
+            ->first();
+
+        if ($scope === null) {
+            return null;
+        }
+
+        return [
+            'match_mode' => $scope->match_mode ?? 'any',
+            'condition' => $scope->condition->value,
+            'value' => $scope->value,
+        ];
+    }
+
+    protected static function resolveCallSite(): array
+    {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20);
+
+        $packageDir = dirname(__DIR__) . DIRECTORY_SEPARATOR;
+
+        foreach ($trace as $frame) {
+            if (! isset($frame['file'])) {
+                continue;
+            }
+
+            if (! str_starts_with($frame['file'], $packageDir)) {
+                return [
+                    'file' => $frame['file'],
+                    'line' => $frame['line'] ?? null,
+                ];
+            }
+        }
+
+        return ['file' => null, 'line' => null];
     }
 
     protected static function evaluateModelScope(ManagedFeatureFlag $feature, Model $scope): bool
