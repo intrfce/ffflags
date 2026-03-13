@@ -253,6 +253,43 @@ Route::get('/beta', BetaController::class)
 
 By default, the middleware throws a 403 HTTP exception when features are inactive.
 
+### Route Feature Flagging
+
+For a more fluent syntax, you can use the `featureFlagged()` method directly on routes:
+
+```php
+// Single feature flag on a route.
+Route::get('/new-dashboard', DashboardController::class)
+    ->featureFlagged(NewDashboardFeature::class);
+
+// Require all features to be active.
+Route::get('/beta', BetaController::class)
+    ->featureFlagged([FeatureA::class, FeatureB::class]);
+
+// Require at least one feature to be active.
+Route::get('/experimental', ExperimentalController::class)
+    ->featureFlagged([FeatureA::class, FeatureB::class], 'any');
+```
+
+You can also feature-flag a group of routes:
+
+```php
+Route::featureFlagged(NewDashboardFeature::class)->group(function () {
+    Route::get('/new-dashboard', DashboardController::class);
+    Route::get('/new-settings', SettingsController::class);
+});
+
+// With multiple flags and a mode.
+Route::featureFlagged([FeatureA::class, FeatureB::class], 'any')->group(function () {
+    Route::get('/beta-a', BetaAController::class);
+    Route::get('/beta-b', BetaBController::class);
+});
+```
+
+The group variant returns a fluent route registrar, so you can chain `->prefix()`, `->name()`, `->middleware()`, and any other route group method as usual.
+
+Under the hood, `featureFlagged()` applies the `FeatureFlagMiddleware` — so all existing behaviour (scoped features via `ResolvingFromMiddleware`, custom `whenInactive` responses, etc.) works automatically.
+
 ### Scoped Features in Middleware
 
 If a feature requires a scope, it must implement the `ResolvingFromMiddleware` interface to tell the middleware how to derive the scope from the request:
@@ -634,6 +671,17 @@ The database stores a `condition` and `value` (array of model IDs) for each feat
 |---|---|
 | At least one feature is active | Request proceeds |
 | No features are active | **403 abort** |
+
+#### Route `featureFlagged()` Macro
+
+| Scenario | Result |
+|---|---|
+| `->featureFlagged(ActiveFeature::class)` on a single route | Request proceeds |
+| `->featureFlagged(InactiveFeature::class)` on a single route | **403 abort** |
+| `->featureFlagged([ActiveFeature, InactiveFeature])` (default `all` mode) | **403 abort** |
+| `->featureFlagged([InactiveFeature, ActiveFeature], 'any')` | Request proceeds |
+| `Route::featureFlagged(ActiveFeature::class)->group(...)` | All grouped routes proceed |
+| `Route::featureFlagged(InactiveFeature::class)->group(...)` | All grouped routes get **403 abort** |
 
 #### Custom `whenInactive` Callback
 

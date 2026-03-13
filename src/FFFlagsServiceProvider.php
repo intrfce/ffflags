@@ -2,6 +2,8 @@
 
 namespace Intrfce\FFFlags;
 
+use Illuminate\Routing\Route;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Intrfce\FFFlags\Commands\ActivateFeatureCommand;
 use Intrfce\FFFlags\Commands\DeactivateFeatureCommand;
@@ -11,6 +13,7 @@ use Intrfce\FFFlags\Commands\PurgeFeatureFlagResultsCommand;
 use Intrfce\FFFlags\Commands\ValidateFeatureFlagsCommand;
 use Intrfce\FFFlags\Contracts\ResultStore;
 use Intrfce\FFFlags\Drivers\DatabaseResultStore;
+use Intrfce\FFFlags\Http\Middleware\FeatureFlagMiddleware;
 
 class FFFlagsServiceProvider extends ServiceProvider
 {
@@ -52,6 +55,8 @@ class FFFlagsServiceProvider extends ServiceProvider
             __DIR__ . "/../database/migrations" => database_path("migrations"),
         ]);
 
+        $this->registerRouteMacros();
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ActivateFeatureCommand::class,
@@ -62,5 +67,32 @@ class FFFlagsServiceProvider extends ServiceProvider
                 ValidateFeatureFlagsCommand::class,
             ]);
         }
+    }
+
+    protected function registerRouteMacros(): void
+    {
+        Route::macro('featureFlagged', function (string|array $features, string $mode = 'all') {
+            if (is_string($features)) {
+                return $this->middleware(FeatureFlagMiddleware::isActive($features));
+            }
+
+            return $this->middleware(match ($mode) {
+                'any' => FeatureFlagMiddleware::anyActive($features),
+                default => FeatureFlagMiddleware::allActive($features),
+            });
+        });
+
+        Router::macro('featureFlagged', function (string|array $features, string $mode = 'all') {
+            if (is_string($features)) {
+                $middleware = FeatureFlagMiddleware::isActive($features);
+            } else {
+                $middleware = match ($mode) {
+                    'any' => FeatureFlagMiddleware::anyActive($features),
+                    default => FeatureFlagMiddleware::allActive($features),
+                };
+            }
+
+            return $this->middleware($middleware);
+        });
     }
 }
