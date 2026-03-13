@@ -22,3 +22,11 @@ Route::post($path . '/features/{slug}', [FeatureDetailController::class, 'update
 Route::post($path . '/features/{slug}/check', [FeatureDetailController::class, 'check'])
     ->middleware($middleware)
     ->name('ffflags.feature.check');
+
+Route::delete($path . '/features/{slug}', [FeatureDetailController::class, 'destroy'])
+    ->middleware($middleware)
+    ->name('ffflags.feature.destroy');
+
+Route::get($path . '/features/{slug}/evaluations', [FeatureDetailController::class, 'evaluations'])
+    ->middleware($middleware)
+    ->name('ffflags.feature.evaluations');

@@ -18,6 +18,7 @@ readonly class DiscoveredFeatureFlag
         public bool $isManaged,
         /** @var class-string<\Illuminate\Database\Eloquent\Model>|null */
         public ?string $modelClass,
+        public ?string $modelTitleColumn = null,
     ) {}
 
     public function getModelScopeLabel(): ?string
@@ -44,6 +45,8 @@ readonly class DiscoveredFeatureFlag
         $isManaged = is_subclass_of($className, ManagedFeatureFlag::class);
         $modelAttrs = $ref->getAttributes(Model::class);
 
+        $modelInstance = count($modelAttrs) > 0 ? $modelAttrs[0]->newInstance() : null;
+
         return new self(
             class: $className,
             name: $instance->getName(),
@@ -51,7 +54,8 @@ readonly class DiscoveredFeatureFlag
             description: $instance->getDescription(),
             bypassesStorage: count($ref->getAttributes(BypassStorage::class)) > 0,
             isManaged: $isManaged,
-            modelClass: count($modelAttrs) > 0 ? $modelAttrs[0]->newInstance()->model : null,
+            modelClass: $modelInstance?->model,
+            modelTitleColumn: $modelInstance?->titleColumn,
         );
     }
 }

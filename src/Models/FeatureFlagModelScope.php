@@ -12,6 +12,7 @@ class FeatureFlagModelScope extends Model
     protected $fillable = [
         'feature_slug',
         'scope_type',
+        'match_mode',
         'condition',
         'value',
     ];

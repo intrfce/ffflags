@@ -92,6 +92,7 @@ it('saves condition and value via POST', function () {
 
     $this->actingAs(actingAsAdmin())
         ->post('/ffflags/features/model-scoped', [
+            'match_mode' => 'any',
             'condition' => 'equals',
             'value' => [1],
         ])
@@ -100,6 +101,7 @@ it('saves condition and value via POST', function () {
     $this->assertDatabaseHas('ffflags_model_scopes', [
         'feature_slug' => 'model-scoped',
         'condition' => 'equals',
+        'match_mode' => 'any',
     ]);
 });
 
@@ -120,6 +122,7 @@ it('updates existing rule on re-submit', function () {
 
     $this->actingAs(actingAsAdmin())
         ->post('/ffflags/features/model-scoped', [
+            'match_mode' => 'any',
             'condition' => 'is_one_of',
             'value' => [1, 2, 3],
         ])
@@ -140,6 +143,7 @@ it('validates condition is a valid enum value', function () {
 
     $this->actingAs(actingAsAdmin())
         ->post('/ffflags/features/model-scoped', [
+            'match_mode' => 'any',
             'condition' => 'invalid',
             'value' => [1],
         ])
@@ -172,6 +176,6 @@ it('falls back to model key when getFeatureSelectorLabel not implemented', funct
         ->get('/ffflags/features/model-scoped');
 
     $response->assertStatus(200);
-    // The option value should show the key (42) as the label
-    $response->assertSee('value="42"', false);
+    // The model key (42) should appear as both the key and label in the JSON props
+    $response->assertSee('&quot;key&quot;:42', false);
 });

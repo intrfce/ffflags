@@ -11,12 +11,15 @@ class Model
 {
     public readonly string $model;
 
-    public function __construct(string $model)
+    public readonly ?string $titleColumn;
+
+    public function __construct(string $model, ?string $titleColumn = null)
     {
         if (! is_subclass_of($model, EloquentModel::class)) {
             throw new InvalidModelAttributeException($model);
         }
 
         $this->model = $model;
+        $this->titleColumn = $titleColumn;
     }
 }

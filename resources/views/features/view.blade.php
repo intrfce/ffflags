@@ -13,6 +13,7 @@ $props = [
     'models' => $models,
     'modelName' => $modelName,
     'currentRule' => $currentRule ? [
+        'match_mode' => $currentRule->match_mode ?? 'any',
         'condition' => $currentRule->condition->value,
         'value' => $currentRule->value,
     ] : null,
@@ -28,6 +29,7 @@ $props = [
         'pass' => (bool) request('check_pass'),
         'message' => request('check_message'),
     ] : null,
+    'logEvaluations' => $logEvaluations ?? false,
 ];
 @endphp
 
